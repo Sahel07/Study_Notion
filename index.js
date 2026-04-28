@@ -1,28 +1,65 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.css";
-import { BrowserRouter } from "react-router-dom";
-import { Provider } from "react-redux";
-import rootReducer from "./reducer";
-import {configureStore} from "@reduxjs/toolkit"
-import { Toaster } from "react-hot-toast";
+const express = require('express');
+const app = express();
+
+const userRoutes = require('./routes/User');
+const profileRoutes = require('./routes/Profile');
+const paymentRoutes = require('./routes/Payment');
+const courseRoutes = require('./routes/Course');
+
+const database = require('./config/database');
+const cookieParser = require('cookie-parser');
+const cors = require('cors'); //backened entertain the front request
+const {cloudinaryConnect} = require('./config/cloudinary');
+const fileUpload = require('express-fileupload');
+const dotenv = require('dotenv');
+
+dotenv.config();
+const PORT = process.env.PORT || 4000;
+
+//database connect
+database.connect();
+//middleware
+app.use(express.json());
+app.use(cookieParser());
+// const allowedOrigins = [
+//     'http://localhost:3000',
+//     'https://localhost:3000',
+//     'http://127.0.0.1:3000',
+//     'https://127.0.0.1:3000',
+//   ];
+
+  app.use(
+    cors({
+      origin: '*', // Allow all origins for now
+      credentials: true,
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+
+  app.use(fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+  }));
+  
+
+//cloudinary connetion
+cloudinaryConnect();
+
+//routes
+app.use("/api/v1/auth", userRoutes);
+app.use("/api/v1/course", courseRoutes);
+app.use("/api/v1/profile", profileRoutes);
+app.use("/api/v1/payment", paymentRoutes);
 
 
-const store = configureStore({
-  reducer:rootReducer,
+//default route
+app.get("/", (req, res) => {
+    return res.json({
+        success: true,
+        message: "Server is up and running..."
+    });
 });
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-  <React.StrictMode>
-  <Provider store = {store}>
-    <BrowserRouter>
-        <App />
-        <Toaster/>
-      </BrowserRouter>
-  </Provider>
-    
-    
-  </React.StrictMode>
-);
+app.listen(PORT, () => {
+    console.log(`App is running at ${PORT}`);
+})
